@@ -365,6 +365,9 @@
 
       // Score (top center)
       drawText(`${score}`, layout.cx, 36, { size: 20, color: COLOR_SUBTLE });
+
+      // Rule reminder (bottom center)
+      drawText('exactly 5 of a kind → pling!', layout.cx, canvas.height - 28, { size: 11, color: COLOR_SUBTLE });
     }
 
     function drawGameOver() {

@@ -12,7 +12,7 @@
     }
 
     body {
-      background: #0a0a0a;
+      background: #0d1117;
       min-height: 100vh;
       display: flex;
       align-items: center;
@@ -43,11 +43,15 @@
     const FEEDBACK_DURATION = 1000; // ms to show correct/wrong
 
     const FONT_MONO = '"SF Mono", Monaco, Inconsolata, "Fira Code", monospace';
-    const COLOR_BG = '#0a0a0a';
-    const COLOR_FG = '#ffffff';
-    const COLOR_DIM = '#333';
-    const COLOR_DIMMER = '#1a1a1a';
-    const COLOR_MUTED = '#555';
+    const COLOR_BG      = '#0d1117'; // github dark background
+    const COLOR_SURFACE = '#161b22'; // cards, button fills
+    const COLOR_BORDER  = '#30363d'; // borders
+    const COLOR_FG      = '#e6edf3'; // primary text
+    const COLOR_MUTED   = '#8b949e'; // secondary text
+    const COLOR_SUBTLE  = '#6e7681'; // muted text
+    const COLOR_CORRECT = '#388bfd'; // correct – colorblind safe blue
+    const COLOR_WRONG   = '#e3b341'; // wrong   – colorblind safe orange
+    const COLOR_RED     = '#f85149'; // hearts only
 
     // ─── Symbols ─────────────────────────────────────────────────────────────────
 
@@ -163,7 +167,7 @@
       ctx.fillText(text, x, y);
     }
 
-    function drawRect(x, y, w, h, { fill = COLOR_DIMMER, stroke = COLOR_DIM, lineWidth = 1 } = {}) {
+    function drawRect(x, y, w, h, { fill = COLOR_SURFACE, stroke = COLOR_BORDER, lineWidth = 1 } = {}) {
       ctx.fillStyle = fill;
       ctx.fillRect(x, y, w, h);
       ctx.strokeStyle = stroke;
@@ -183,11 +187,22 @@
       // How to play
       drawText('count symbols across all cards', layout.cx, layout.cy - 35, { size: 13, color: COLOR_MUTED });
       drawText('spot exactly 5 of a kind → PLING!', layout.cx, layout.cy - 14, { size: 13, color: COLOR_MUTED });
-      drawText('wrong press → lose a heart ♥', layout.cx, layout.cy + 7, { size: 13, color: COLOR_MUTED });
+      // Draw "wrong press → lose a heart" + red heart separately
+      const prefix = 'wrong press → lose a heart ';
+      const heart = '♥';
+      ctx.font = `13px ${FONT_MONO}`;
+      const totalWidth = ctx.measureText(prefix + heart).width;
+      const textStartX = layout.cx - totalWidth / 2;
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = COLOR_MUTED;
+      ctx.fillText(prefix, textStartX, layout.cy + 7);
+      ctx.fillStyle = COLOR_RED;
+      ctx.fillText(heart, textStartX + ctx.measureText(prefix).width, layout.cy + 7);
 
       // High score
-      drawText('how many can you get?', layout.cx, layout.cy + 45, { size: 13, color: '#333' });
-      drawText(`best: ${highScore}`, layout.cx, layout.cy + 68, { size: 20, color: '#666' });
+      drawText('how many can you get?', layout.cx, layout.cy + 45, { size: 13, color: COLOR_SUBTLE });
+      drawText(`best: ${highScore}`, layout.cx, layout.cy + 68, { size: 20, color: COLOR_MUTED });
 
       // Start button – inverted
       const btn = layout.menuButton;
@@ -206,8 +221,8 @@
     function drawCard(x, y, card, index) {
       // Border only when empty, subtle fill when card present
       drawRect(x, y, CARD_WIDTH, CARD_HEIGHT, {
-        fill: card ? '#111' : COLOR_BG,
-        stroke: card ? '#444' : '#222',
+        fill: card ? COLOR_SURFACE : COLOR_BG,
+        stroke: card ? COLOR_BORDER : '#21262d',
         lineWidth: 1
       });
 
@@ -242,24 +257,24 @@
 
     function drawBell(bell) {
       // Determine color based on state
-      let fill = '#1a1a1a';
-      let stroke = '#444';
+      let fill = COLOR_SURFACE;
+      let stroke = COLOR_BORDER;
       let labelColor = COLOR_FG;
       let label = 'pling!';
       let labelSize = 18;
 
       if (gameState === 'feedback') {
         if (lastResult === 'correct') {
-          fill = '#052e16';
-          stroke = '#166534';
+          fill = '#0d1f3c';
+          stroke = COLOR_CORRECT;
           label = '✓';
-          labelColor = '#4ade80';
+          labelColor = COLOR_CORRECT;
           labelSize = 32;
         } else {
-          fill = '#2d0a0a';
-          stroke = '#7f1d1d';
+          fill = '#2d1f0a';
+          stroke = COLOR_WRONG;
           label = '✗';
-          labelColor = '#f87171';
+          labelColor = COLOR_WRONG;
           labelSize = 32;
         }
       }
@@ -289,7 +304,7 @@
         hearts += i < lives ? full : empty;
         if (i < MAX_LIVES - 1) hearts += ' ';
       }
-      drawText(hearts, 20, 36, { size: 20, color: '#c0392b', align: 'left' });
+      drawText(hearts, 20, 36, { size: 20, color: COLOR_RED, align: 'left' });
     }
 
     function drawGame() {
@@ -310,7 +325,7 @@
       // Close button
       drawRect(layout.closeButton.x, layout.closeButton.y, layout.closeButton.size, layout.closeButton.size, {
         fill: COLOR_BG,
-        stroke: '#333'
+        stroke: COLOR_BORDER
       });
       drawText('×', layout.closeButton.x + layout.closeButton.size / 2, layout.closeButton.y + layout.closeButton.size / 2, { size: 18, color: COLOR_MUTED });
 
@@ -318,7 +333,7 @@
       drawLives();
 
       // Score (top center)
-      drawText(`${score}`, layout.cx, 36, { size: 20, color: '#444' });
+      drawText(`${score}`, layout.cx, 36, { size: 20, color: COLOR_SUBTLE });
     }
 
     function drawGameOver() {
@@ -329,9 +344,9 @@
       drawText(`score: ${score}`, layout.cx, layout.cy - 20, { size: 28 });
 
       if (score > 0 && score === highScore) {
-        drawText('new record!', layout.cx, layout.cy + 25, { size: 14, color: '#4ade80' });
+        drawText('new record!', layout.cx, layout.cy + 25, { size: 14, color: COLOR_CORRECT });
       } else {
-        drawText(`best: ${highScore}`, layout.cx, layout.cy + 25, { size: 14, color: '#444' });
+        drawText(`best: ${highScore}`, layout.cx, layout.cy + 25, { size: 14, color: COLOR_SUBTLE });
       }
 
       // Back to menu button – inverted

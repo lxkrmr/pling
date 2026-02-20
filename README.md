@@ -29,6 +29,13 @@ python3 -m http.server 8080
 - No dark patterns, no ads, no tracking
 - One button. Maximum focus.
 
+## Accessibility
+
+Designed with color blindness in mind – no red/green distinction for game feedback.
+Correct and wrong are shown in **blue** and **orange** instead.
+
+Inspired by the [GitHub Dark Colorblind theme](https://github.com/settings/appearance).
+
 ## Tech
 
 - Single `index.html` – no framework, no build tools

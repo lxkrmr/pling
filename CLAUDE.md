@@ -1,97 +1,103 @@
 # pling
 
-Ein Web-Prototyp. Minimal, explorativ, ehrlich.
+A web prototype. Minimal, exploratory, honest.
 
-## Zweck
+## Purpose
 
-Ein Reaktionsspiel: Karten erscheinen automatisch, bei genau 5 einer Sorte → Button drücken.
+A reaction game: cards appear automatically, hit the button when you see exactly 5 of a kind.
 
-**Inspiration:** Halli Galli – aber radikal vereinfacht. Nur die Glocke.
+**Inspiration:** Classic card reaction games – radically simplified. Just the bell.
 
-**Kernfrage:** Fühlt sich das gut an? Macht das Spaß?
+**Core question:** Does it feel good? Is it fun?
 
 ## Status
 
-**Gestartet:** 20. Februar 2026  
-**Phase:** Prototyp
+**Started:** February 20, 2026
+**Phase:** Prototype
 
-## Technisch
+## Tech
 
 - **Stack:** Vanilla HTML + CSS + JS
-- **Keine Dependencies:** Kein Framework, kein Build-Tool
-- **Eine Datei:** `index.html` enthält alles
-- **Ziel:** Browser, Touch + Mouse
+- **No dependencies:** No framework, no build tools
+- **Single file:** `index.html` contains everything
+- **Target:** Browser, touch + mouse
 
-## Regeln
+## Rules
 
 ### Git
-Der Mensch macht Git. Keine Commits, Pushes oder Branch-Operationen durch Claude.
+The human does Git. No commits, pushes or branch operations by Claude.
 
-### Sprache
-- **Code & Kommentare:** Englisch
-- **README:** Englisch (öffentlich)
-- **CLAUDE.md:** Deutsch (intern)
+### Language
+- **Code & comments:** English
+- **README:** English (public)
+- **CLAUDE.md:** English (public)
 
-### Code-Stil
-- Einfach > clever
-- Lesbar > kurz
-- Funktioniert > perfekt
+### Code style
+- Simple > clever
+- Readable > short
+- Works > perfect
 
 ### Iteration
-- Kleine Schritte
-- Testen, fühlen, anpassen
-- "Done" ist wenn es sich gut anfühlt
+- Small steps
+- Test, feel, adjust
+- "Done" is when it feels right
 
-## Werte
+## Values
 
-Dieser Prototyp folgt einer einfachen Philosophie:
+This prototype follows a simple philosophy:
 
-- **Respekt:** Keine Dark Patterns, keine Manipulation
-- **Ehrlichkeit:** Was du siehst ist was du bekommst
-- **Einfachheit:** So wenig wie möglich, so viel wie nötig
-- **Freude:** Wenn es keinen Spaß macht, warum dann?
+- **Respect:** No dark patterns, no manipulation
+- **Honesty:** What you see is what you get
+- **Simplicity:** As little as possible, as much as needed
+- **Joy:** If it's not fun, why bother?
 
-## Spielkonzept
+## Game concept
 
-### Core Loop
+### Core loop
 
 ```
-Karten erscheinen automatisch
+Cards appear automatically
         ↓
-Zählen, im Kopf behalten
+Count, keep track in your head
         ↓
-5 von einer Sorte? → PLING!
+5 of a kind? → PLING!
         ↓
-Richtig → Punkte
-Falsch → Penalty
+Correct → Points
+Wrong → Penalty (lose a heart)
 ```
 
-### Modi
+### Screens
 
-- **Solo:** Reaktionszeit messen, Highscore
-- **2-Spieler:** Bildschirm geteilt, wer zuerst drückt gewinnt
+- **Menu:** Title, high score, start button
+- **Countdown:** 3 → 2 → 1
+- **Game:** 3 stacks, PLING button, 3 hearts, score
+- **Game over:** Score, high score, back to menu
 
 ### Design
 
-- Ein Button – maximaler Fokus
-- Karten erscheinen automatisch
-- Simpel, keine Ablenkung
+- No sounds – play alongside music or podcasts
+- CLI aesthetic – dark theme, monospace font
+- One button – maximum focus
+- Cards show symbols in dice-style layout (1–4 symbols)
 
-## Kontext
+## Context
 
-Dieser Prototyp ist Teil einer größeren Exploration:
-- Spielideen ausprobieren
-- Vanilla JS/HTML lernen
-- Herausfinden was funktioniert
+This prototype is part of a larger exploration:
+- Try out game ideas
+- Learn Vanilla JS/HTML
+- Find out what works
 
-Kein Produkt, kein Launch-Druck. Nur: Macht das Spaß?
+No product, no launch pressure. Just: is it fun?
 
-## Offene Fragen
+## Open questions
 
-- [ ] Welche Symbole auf den Karten?
-- [ ] Wie schnell erscheinen neue Karten?
-- [ ] Wie 2-Spieler-Modus umsetzen? (Split-Screen?)
+- [ ] How fast should cards appear? Does speed increase over time?
+- [ ] How to implement 2-player mode? (split screen?)
+- [ ] Persist high score with localStorage?
 
-## Erkenntnisse
+## Learnings
 
-*(Hier sammeln wir was wir lernen)*
+- Dice-style symbol layout is instantly readable (subitizing)
+- Canvas gives full control – worth the extra setup
+- Small commits keep things testable and reversible
+- State machine ('menu' | 'countdown' | 'playing' | 'feedback' | 'gameover') keeps logic clean

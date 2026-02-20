@@ -58,6 +58,10 @@ pling! is a PWA – installable on your device, works offline.
 
 🔬 Prototype – work in progress.
 
+## Design
+
+Game idea, decisions, and learnings: [DESIGN.md](DESIGN.md)
+
 ## License
 
 [MIT](LICENSE)

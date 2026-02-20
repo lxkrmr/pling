@@ -1,23 +1,20 @@
-# pling
+# pling! – AI Rules
 
-A web prototype. Minimal, exploratory, honest.
+Rules and context for the AI agent working on this project.
 
-## Purpose
+→ Game idea, design decisions, and learnings: [DESIGN.md](DESIGN.md)
 
-A reaction game: cards appear automatically, hit the button when you see exactly 5 of a kind.
+---
 
-**Inspiration:** Classic card reaction games – radically simplified. Just the bell.
+## Project
 
-**Core question:** Does it feel good? Is it fun?
-
-## Status
+A reaction game. Cards appear automatically. Hit the button when you spot exactly 5 of a kind.
 
 **Started:** February 20, 2026
-**Phase:** Prototype
 
 ## Tech
 
-- **Stack:** Vanilla HTML + CSS + JS
+- **Stack:** Vanilla HTML + CSS + JS, Canvas
 - **No dependencies:** No framework, no build tools
 - **Files:** `index.html` (game), `manifest.json` + `sw.js` + `icon.svg` (PWA)
 - **Target:** Browser, touch + mouse, installable as PWA
@@ -25,96 +22,35 @@ A reaction game: cards appear automatically, hit the button when you see exactly
 ## Rules
 
 ### Git
-The human does Git. No commits, pushes or branch operations by Claude.
+The human does Git. No commits, pushes, or branch operations by the AI.
 
-### Browser
-Only use Chromium automation when explicitly asked.
+### Server
+The human starts the server. The AI does not run `python3 -m http.server` or similar.
 
 ### Language
 - **Code & comments:** English
-- **README:** English (public)
-- **CLAUDE.md:** English (public)
+- **CLAUDE.md & README:** English
+- **In-game text:** Via i18n (DE + EN)
 
 ### Code style
 - Simple > clever
 - Readable > short
 - Works > perfect
 
+### AI behavior
+- **Questions get answers** – if the human asks a question, answer it. Don't just start doing things.
+- **Dialogue over assumptions** – if something doesn't make sense, ask. Don't silently interpret and execute.
+
 ### Iteration
-- Small steps
+- Small steps, each committable independently
 - Test, feel, adjust
 - "Done" is when it feels right
 
-## Values
+## Standard features
 
-This prototype follows a simple philosophy:
-
-- **Respect:** No dark patterns, no manipulation
-- **Honesty:** What you see is what you get
-- **Simplicity:** As little as possible, as much as needed
-- **Joy:** If it's not fun, why bother?
-
-## Game concept
-
-### Core loop
-
-```
-Cards appear automatically
-        ↓
-Count, keep track in your head
-        ↓
-5 of a kind? → PLING!
-        ↓
-Correct → Points
-Wrong → Penalty (lose a heart)
-```
-
-### Screens
-
-- **Menu:** Title, instructions, high score, start button
-- **Countdown:** "ready?" → "go!"
-- **Game:** 2–4 stacks, PLING button, 3 hearts, score
-- **Game over:** Score, high score, back to menu
-
-### Progression
-
-- Start: 2 stacks, 1200ms interval
-- Score 3: 3rd stack unlocks
-- Score 15: 4th stack unlocks
-- Speed increases with score, minimum 500ms
-
-### Design
-
-- No sounds – play alongside music or podcasts
-- CLI aesthetic – dark theme, monospace font, GitHub Dark Colorblind palette
-- One button – maximum focus
-- Cards show symbols in dice-style layout (1–4 symbols)
-- Colorblind-safe: blue = correct, orange = wrong (no red/green)
-- Phone-style layout on desktop (max 430px wide)
-
-## Context
-
-This prototype is part of a larger exploration:
-- Try out game ideas
-- Learn Vanilla JS/HTML
-- Find out what works
-
-No product, no launch pressure. Just: is it fun?
-
-## Open questions
-
-- [ ] How to implement 2-player mode? (split screen?)
-- [ ] Light theme toggle
-
-## Learnings
-
-- Dice-style symbol layout is instantly readable (subitizing)
-- Canvas gives full control – worth the extra setup
-- Small commits keep things testable and reversible
-- State machine ('menu' | 'countdown' | 'playing' | 'feedback' | 'gameover') keeps logic clean
-- setTimeout chain > setInterval for variable tempo
-- Data-driven countdown steps (COUNTDOWN_STEPS array) = open/closed principle
-- Network-first service worker = always fresh when online, offline as fallback
-- Colorblind-safe palette: blue/orange instead of green/red
-- Canvas coordinate offset needed when canvas is smaller than viewport (getBoundingClientRect)
-- Progressive stack unlock makes onboarding natural without a tutorial
+| Feature | Details |
+|---|---|
+| **i18n** | Language auto-detected via `navigator.language`, toggle button, persisted in `localStorage` |
+| **PWA** | Installable, offline-capable via Service Worker (network-first) |
+| **Phone frame** | Canvas 430×932px, centered, `border-radius: 12px` |
+| **Colors** | GitHub Dark Colorblind palette – blue/orange, never green/red |

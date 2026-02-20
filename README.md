@@ -36,6 +36,16 @@ Correct and wrong are shown in **blue** and **orange** instead.
 
 Inspired by the [GitHub Dark Colorblind theme](https://github.com/settings/appearance).
 
+## Install as App
+
+pling! is a PWA – installable on your device, works offline.
+
+**iOS (recommended):** Safari → Share → Add to Home Screen
+
+**Android:** Chrome → Menu → Install App
+
+**macOS:** Safari → File → Add to Dock
+
 ## Tech
 
 - Single `index.html` – no framework, no build tools

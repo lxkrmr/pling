@@ -50,6 +50,10 @@
     const BASE_INTERVAL = 1200;  // ms between cards at score 0
     const MIN_INTERVAL  = 500;   // fastest possible
     const FEEDBACK_DURATION = 1000; // ms to show correct/wrong
+    const COUNTDOWN_STEPS = [
+      { text: 'ready?', duration: 700 },
+      { text: 'go!',    duration: 500 }
+    ];
 
     const FONT_MONO = '"SF Mono", Monaco, Inconsolata, "Fira Code", monospace';
     const COLOR_BG      = '#0d1117'; // github dark background
@@ -70,7 +74,7 @@
 
     // gameState: 'menu' | 'countdown' | 'playing' | 'feedback' | 'gameover'
     let gameState = 'menu';
-    let countdownValue = 3;
+    let countdownText = '';
     let countdownTimer = null;
     let currentStackIndex = 0;
     let stacks = [null, null, null, null];
@@ -232,7 +236,7 @@
       const layout = getLayout();
       clearCanvas();
 
-      drawText(String(countdownValue), layout.cx, layout.cy, { size: 128 });
+      drawText(countdownText, layout.cx, layout.cy, { size: 64 });
     }
 
     function drawLockedCard(x, y, threshold) {
@@ -442,7 +446,7 @@
 
     function goToMenu() {
       if (gameLoop) { clearTimeout(gameLoop); gameLoop = null; }
-      if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
+      if (countdownTimer) { clearTimeout(countdownTimer); countdownTimer = null; }
       ripples = [];
       cardFlashes = [];
       stacks = [null, null, null, null];
@@ -463,19 +467,21 @@
 
     function startCountdown() {
       gameState = 'countdown';
-      countdownValue = 3;
       lives = MAX_LIVES;
       score = 0;
       activeStacks = 2;
 
-      countdownTimer = setInterval(() => {
-        countdownValue--;
-        if (countdownValue === 0) {
-          clearInterval(countdownTimer);
+      function runStep(index) {
+        if (index >= COUNTDOWN_STEPS.length) {
           countdownTimer = null;
           startPlaying();
+          return;
         }
-      }, 1000);
+        const step = COUNTDOWN_STEPS[index];
+        countdownText = step.text;
+        countdownTimer = setTimeout(() => runStep(index + 1), step.duration);
+      }
+      runStep(0);
     }
 
     function checkUnlock() {

@@ -16,12 +16,14 @@ python3 -m http.server 8080
 
 ## How to play
 
-- Cards appear on 3 stacks, one by one
+- Cards appear on 2–4 stacks, one by one
 - Each card shows 1–4 symbols (●, ■, ▲)
 - Count the symbols across all visible cards
 - See exactly **5 of a kind**? Hit **PLING!**
 - Wrong press → lose a heart
 - 3 hearts → game over
+
+More stacks unlock as your score grows – it gets faster too.
 
 ## Philosophy
 
@@ -48,8 +50,8 @@ pling! is a PWA – installable on your device, works offline.
 
 ## Tech
 
-- Single `index.html` – no framework, no build tools
-- Vanilla JS + Canvas
+- Vanilla JS + Canvas – no framework, no build tools
+- PWA – installable, works offline
 - Works in any browser, desktop and mobile
 
 ## Status

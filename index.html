@@ -130,17 +130,21 @@
       clearCanvas();
 
       // Title
-      drawText('pling!', layout.cx, layout.cy - 80, { size: 64 });
+      drawText('pling!', layout.cx, layout.cy - 100, { size: 64 });
+
+      // How to play
+      drawText('count symbols across all cards', layout.cx, layout.cy - 30, { size: 14, color: '#666' });
+      drawText('spot exactly 5 of a kind → PLING!', layout.cx, layout.cy - 8, { size: 14, color: '#666' });
+      drawText('wrong press → lose a heart ♥', layout.cx, layout.cy + 14, { size: 14, color: '#666' });
 
       // High score
-      if (highScore > 0) {
-        drawText(`best: ${highScore}`, layout.cx, layout.cy - 20, { size: 18, color: '#888' });
-      }
+      drawText('how many can you get?', layout.cx, layout.cy + 42, { size: 14, color: '#555' });
+      drawText(`best: ${highScore}`, layout.cx, layout.cy + 65, { size: 18, color: '#888' });
 
-      // Start button
-      const btn = layout.button;
-      drawRect(btn.x, btn.y, btn.width, btn.height);
-      drawText('start', btn.x + btn.width / 2, btn.y + btn.height / 2);
+      // Start button (fixed position below content)
+      const btnY = layout.cy + 110;
+      drawRect(layout.cx - BUTTON_WIDTH / 2, btnY, BUTTON_WIDTH, BUTTON_HEIGHT);
+      drawText('start', layout.cx, btnY + BUTTON_HEIGHT / 2);
     }
 
     function drawCountdown() {
@@ -382,7 +386,8 @@
       const layout = getLayout();
 
       if (gameState === 'menu') {
-        if (isInside(x, y, layout.button)) startCountdown();
+        const menuBtn = { x: layout.cx - BUTTON_WIDTH / 2, y: layout.cy + 110, width: BUTTON_WIDTH, height: BUTTON_HEIGHT };
+        if (isInside(x, y, menuBtn)) startCountdown();
 
       } else if (gameState === 'playing') {
         if (isInside(x, y, layout.closeButton)) goToMenu();

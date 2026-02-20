@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>pling</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: #1a1a1a;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    canvas {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="game"></canvas>
+
+  <script>
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+
+    // Constants
+    const CARD_WIDTH = 100;
+    const CARD_HEIGHT = 140;
+    const CARD_GAP = 20;
+    const BUTTON_WIDTH = 200;
+    const BUTTON_HEIGHT = 80;
+    const CARD_INTERVAL = 1000; // ms between cards
+    const FEEDBACK_DURATION = 1500; // ms to show result
+
+    // State
+    let gameState = 'idle'; // 'idle', 'playing', 'feedback'
+    let currentStackIndex = 0;
+    let stacks = [null, null, null];
+    let gameLoop = null;
+    let lastResult = null; // 'correct' or 'wrong'
+
+    // Symbols (CLI aesthetic)
+    const SYMBOLS = ['●', '■', '▲'];
+
+    // Sizing
+    function resize() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      draw();
+    }
+
+    // Calculate positions
+    function getLayout() {
+      const totalCardsWidth = 3 * CARD_WIDTH + 2 * CARD_GAP;
+      const centerX = canvas.width / 2;
+      const centerY = canvas.height / 2;
+
+      const cardsY = centerY - CARD_HEIGHT / 2 - 40;
+      const buttonY = centerY + CARD_HEIGHT / 2 + 20;
+      const cardsStartX = centerX - totalCardsWidth / 2;
+
+      return {
+        cards: [
+          { x: cardsStartX, y: cardsY },
+          { x: cardsStartX + CARD_WIDTH + CARD_GAP, y: cardsY },
+          { x: cardsStartX + 2 * (CARD_WIDTH + CARD_GAP), y: cardsY }
+        ],
+        button: {
+          x: centerX - BUTTON_WIDTH / 2,
+          y: buttonY,
+          width: BUTTON_WIDTH,
+          height: BUTTON_HEIGHT
+        }
+      };
+    }
+
+    // Draw a card slot
+    function drawCard(x, y, card) {
+      ctx.fillStyle = card ? '#2a2a2a' : '#222';
+      ctx.fillRect(x, y, CARD_WIDTH, CARD_HEIGHT);
+
+      ctx.strokeStyle = card ? '#444' : '#333';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(x, y, CARD_WIDTH, CARD_HEIGHT);
+
+      if (card) {
+        ctx.fillStyle = '#e0e0e0';
+        ctx.font = '24px "SF Mono", Monaco, Inconsolata, "Fira Code", monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        const lineHeight = 28;
+        const startY = y + CARD_HEIGHT / 2 - ((card.count - 1) * lineHeight) / 2;
+
+        for (let i = 0; i < card.count; i++) {
+          ctx.fillText(card.symbol, x + CARD_WIDTH / 2, startY + i * lineHeight);
+        }
+      }
+    }
+
+    // Draw button
+    function drawButton(btn) {
+      // Button color based on state
+      let bgColor = '#2a2a2a';
+      let borderColor = '#444';
+      let textColor = '#e0e0e0';
+      let text = 'start';
+
+      if (gameState === 'playing') {
+        text = 'PLING!';
+      } else if (gameState === 'feedback') {
+        if (lastResult === 'correct') {
+          bgColor = '#166534'; // dark green
+          borderColor = '#22c55e'; // green
+          textColor = '#4ade80';
+          text = 'correct!';
+        } else {
+          bgColor = '#7f1d1d'; // dark red
+          borderColor = '#ef4444'; // red
+          textColor = '#f87171';
+          text = 'wrong!';
+        }
+      }
+
+      ctx.fillStyle = bgColor;
+      ctx.fillRect(btn.x, btn.y, btn.width, btn.height);
+      ctx.strokeStyle = borderColor;
+      ctx.lineWidth = 2;
+      ctx.strokeRect(btn.x, btn.y, btn.width, btn.height);
+
+      ctx.fillStyle = textColor;
+      ctx.font = '24px "SF Mono", Monaco, Inconsolata, "Fira Code", monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(text, btn.x + btn.width / 2, btn.y + btn.height / 2);
+    }
+
+    // Draw everything
+    function draw() {
+      const layout = getLayout();
+
+      ctx.fillStyle = '#1a1a1a';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      for (let i = 0; i < 3; i++) {
+        drawCard(layout.cards[i].x, layout.cards[i].y, stacks[i]);
+      }
+
+      drawButton(layout.button);
+    }
+
+    // Generate a random card
+    function randomCard() {
+      const symbol = SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)];
+      const count = Math.floor(Math.random() * 4) + 1; // 1 to 4
+      return { symbol, count };
+    }
+
+    // Add a card to the next stack
+    function addNextCard() {
+      stacks[currentStackIndex] = randomCard();
+      currentStackIndex = (currentStackIndex + 1) % 3;
+      draw();
+    }
+
+    // Count symbols across all visible cards
+    function countSymbols() {
+      const counts = {};
+      for (const symbol of SYMBOLS) {
+        counts[symbol] = 0;
+      }
+
+      for (const card of stacks) {
+        if (card) {
+          counts[card.symbol] += card.count;
+        }
+      }
+
+      return counts;
+    }
+
+    // Check if any symbol has exactly 5
+    function hasExactlyFive() {
+      const counts = countSymbols();
+      for (const symbol of SYMBOLS) {
+        if (counts[symbol] === 5) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    // Start the game
+    function startGame() {
+      gameState = 'playing';
+      currentStackIndex = 0;
+      stacks = [null, null, null];
+      lastResult = null;
+      draw();
+
+      gameLoop = setInterval(addNextCard, CARD_INTERVAL);
+    }
+
+    // Stop the game and show result
+    function stopGame(result) {
+      if (gameLoop) {
+        clearInterval(gameLoop);
+        gameLoop = null;
+      }
+
+      gameState = 'feedback';
+      lastResult = result;
+      draw();
+
+      // Reset to idle after delay
+      setTimeout(() => {
+        gameState = 'idle';
+        stacks = [null, null, null];
+        draw();
+      }, FEEDBACK_DURATION);
+    }
+
+    // Handle PLING press
+    function checkPling() {
+      const correct = hasExactlyFive();
+      stopGame(correct ? 'correct' : 'wrong');
+    }
+
+    // Check if point is inside button
+    function isInsideButton(x, y) {
+      const layout = getLayout();
+      const btn = layout.button;
+      return x >= btn.x && x <= btn.x + btn.width &&
+             y >= btn.y && y <= btn.y + btn.height;
+    }
+
+    // Handle click/tap
+    function handlePress(x, y) {
+      if (isInsideButton(x, y)) {
+        if (gameState === 'idle') {
+          startGame();
+        } else if (gameState === 'playing') {
+          checkPling();
+        }
+        // ignore clicks during feedback
+      }
+    }
+
+    // Events
+    canvas.addEventListener('click', (e) => {
+      handlePress(e.clientX, e.clientY);
+    });
+
+    canvas.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      const touch = e.touches[0];
+      handlePress(touch.clientX, touch.clientY);
+    });
+
+    window.addEventListener('resize', resize);
+
+    // Start
+    resize();
+  </script>
+</body>
+</html>

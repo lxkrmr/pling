@@ -39,13 +39,16 @@
 
     // ─── Constants ───────────────────────────────────────────────────────────────
 
-    const CARD_WIDTH = 100;
-    const CARD_HEIGHT = 140;
-    const CARD_GAP = 20;
+    const CARD_WIDTH = 80;
+    const CARD_HEIGHT = 120;
+    const CARD_GAP = 12;
+    const STACK_COUNT = 4;
+    const UNLOCK_THRESHOLDS = [3, 15]; // score to unlock stack 3, 4
     const BUTTON_WIDTH = 200;
     const BUTTON_HEIGHT = 56;
     const BELL_RADIUS = 60;
-    const CARD_INTERVAL = 1000; // ms between cards
+    const BASE_INTERVAL = 1200;  // ms between cards at score 0
+    const MIN_INTERVAL  = 500;   // fastest possible
     const FEEDBACK_DURATION = 1000; // ms to show correct/wrong
 
     const FONT_MONO = '"SF Mono", Monaco, Inconsolata, "Fira Code", monospace';
@@ -70,7 +73,8 @@
     let countdownValue = 3;
     let countdownTimer = null;
     let currentStackIndex = 0;
-    let stacks = [null, null, null];
+    let stacks = [null, null, null, null];
+    let activeStacks = 2;
     let gameLoop = null;
     let lastResult = null; // 'correct' | 'wrong'
     let lives = 3;
@@ -129,7 +133,7 @@
     // ─── Layout ──────────────────────────────────────────────────────────────────
 
     function getLayout() {
-      const totalCardsWidth = 3 * CARD_WIDTH + 2 * CARD_GAP;
+      const totalCardsWidth = STACK_COUNT * CARD_WIDTH + (STACK_COUNT - 1) * CARD_GAP;
       const cx = canvas.width / 2;
       const cy = canvas.height / 2;
 
@@ -140,14 +144,15 @@
       // Bell sits below cards
       const bellY = cardsY + CARD_HEIGHT + 40 + BELL_RADIUS;
 
+      const cards = [];
+      for (let i = 0; i < STACK_COUNT; i++) {
+        cards.push({ x: cardsStartX + i * (CARD_WIDTH + CARD_GAP), y: cardsY });
+      }
+
       return {
         cx,
         cy,
-        cards: [
-          { x: cardsStartX, y: cardsY },
-          { x: cardsStartX + CARD_WIDTH + CARD_GAP, y: cardsY },
-          { x: cardsStartX + 2 * (CARD_WIDTH + CARD_GAP), y: cardsY }
-        ],
+        cards,
         bell: { x: cx, y: bellY, radius: BELL_RADIUS },
         menuButton: {
           x: cx - BUTTON_WIDTH / 2,
@@ -228,6 +233,12 @@
       clearCanvas();
 
       drawText(String(countdownValue), layout.cx, layout.cy, { size: 128 });
+    }
+
+    function drawLockedCard(x, y, threshold) {
+      drawRect(x, y, CARD_WIDTH, CARD_HEIGHT, { fill: COLOR_BG, stroke: '#21262d' });
+      drawText('+', x + CARD_WIDTH / 2, y + CARD_HEIGHT / 2 - 14, { size: 22, color: '#30363d' });
+      drawText(`at ${threshold}`, x + CARD_WIDTH / 2, y + CARD_HEIGHT / 2 + 14, { size: 10, color: '#30363d' });
     }
 
     function drawCard(x, y, card, index) {
@@ -323,9 +334,13 @@
       const layout = getLayout();
       clearCanvas();
 
-      // Cards
-      for (let i = 0; i < 3; i++) {
-        drawCard(layout.cards[i].x, layout.cards[i].y, stacks[i], i);
+      // Cards – active ones show content, locked ones show threshold
+      for (let i = 0; i < STACK_COUNT; i++) {
+        if (i < activeStacks) {
+          drawCard(layout.cards[i].x, layout.cards[i].y, stacks[i], i);
+        } else {
+          drawLockedCard(layout.cards[i].x, layout.cards[i].y, UNLOCK_THRESHOLDS[i - 2]);
+        }
       }
 
       // Ripples (behind bell)
@@ -393,6 +408,10 @@
 
     // ─── Game logic ──────────────────────────────────────────────────────────────
 
+    function getInterval() {
+      return Math.max(MIN_INTERVAL, BASE_INTERVAL - score * 40);
+    }
+
     function randomCard() {
       const symbol = SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)];
       const count = Math.floor(Math.random() * 4) + 1; // 1–4
@@ -402,7 +421,7 @@
     function addNextCard() {
       addCardFlash(currentStackIndex);
       stacks[currentStackIndex] = randomCard();
-      currentStackIndex = (currentStackIndex + 1) % 3;
+      currentStackIndex = (currentStackIndex + 1) % activeStacks;
     }
 
     function countSymbols() {
@@ -422,18 +441,19 @@
     // ─── Transitions ─────────────────────────────────────────────────────────────
 
     function goToMenu() {
-      if (gameLoop) { clearInterval(gameLoop); gameLoop = null; }
+      if (gameLoop) { clearTimeout(gameLoop); gameLoop = null; }
       if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
       ripples = [];
       cardFlashes = [];
-      stacks = [null, null, null];
+      stacks = [null, null, null, null];
+      activeStacks = 2;
       currentStackIndex = 0;
       lastResult = null;
       gameState = 'menu';
     }
 
     function goToGameOver() {
-      if (gameLoop) { clearInterval(gameLoop); gameLoop = null; }
+      if (gameLoop) { clearTimeout(gameLoop); gameLoop = null; }
       if (score > highScore) {
         highScore = score;
         localStorage.setItem('highScore', highScore);
@@ -446,6 +466,7 @@
       countdownValue = 3;
       lives = MAX_LIVES;
       score = 0;
+      activeStacks = 2;
 
       countdownTimer = setInterval(() => {
         countdownValue--;
@@ -457,18 +478,37 @@
       }, 1000);
     }
 
+    function checkUnlock() {
+      let newActive = 2;
+      for (const t of UNLOCK_THRESHOLDS) {
+        if (score >= t) newActive++;
+      }
+      newActive = Math.min(newActive, STACK_COUNT);
+      if (newActive > activeStacks) {
+        activeStacks = newActive;
+        addCardFlash(activeStacks - 1); // flash the newly unlocked stack
+      }
+    }
+
+    function scheduleNextCard() {
+      gameLoop = setTimeout(() => {
+        addNextCard();
+        if (gameState === 'playing') scheduleNextCard();
+      }, getInterval());
+    }
+
     function startPlaying() {
       gameState = 'playing';
-      stacks = [null, null, null];
+      stacks = [null, null, null, null];
       currentStackIndex = 0;
-      gameLoop = setInterval(addNextCard, CARD_INTERVAL);
+      scheduleNextCard();
     }
 
     function checkPling(x, y) {
-      if (gameLoop) { clearInterval(gameLoop); gameLoop = null; }
+      if (gameLoop) { clearTimeout(gameLoop); gameLoop = null; }
 
       lastResult = hasExactlyFive() ? 'correct' : 'wrong';
-      if (lastResult === 'correct') score++;
+      if (lastResult === 'correct') { score++; checkUnlock(); }
       if (lastResult === 'wrong') lives--;
 
       addRipple(x, y);

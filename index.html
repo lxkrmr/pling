@@ -12,7 +12,7 @@
     }
 
     body {
-      background: #1a1a1a;
+      background: #0a0a0a;
       min-height: 100vh;
       display: flex;
       align-items: center;
@@ -37,15 +37,17 @@
     const CARD_HEIGHT = 140;
     const CARD_GAP = 20;
     const BUTTON_WIDTH = 200;
-    const BUTTON_HEIGHT = 80;
+    const BUTTON_HEIGHT = 56;
+    const BELL_RADIUS = 60;
     const CARD_INTERVAL = 1000; // ms between cards
     const FEEDBACK_DURATION = 1000; // ms to show correct/wrong
 
     const FONT_MONO = '"SF Mono", Monaco, Inconsolata, "Fira Code", monospace';
-    const COLOR_BG = '#1a1a1a';
-    const COLOR_FG = '#e0e0e0';
-    const COLOR_DIM = '#444';
-    const COLOR_DIMMER = '#333';
+    const COLOR_BG = '#0a0a0a';
+    const COLOR_FG = '#ffffff';
+    const COLOR_DIM = '#333';
+    const COLOR_DIMMER = '#1a1a1a';
+    const COLOR_MUTED = '#555';
 
     // ─── Symbols ─────────────────────────────────────────────────────────────────
 
@@ -53,7 +55,7 @@
 
     // ─── State ───────────────────────────────────────────────────────────────────
 
-    // gameState: 'menu' | 'countdown' | 'playing' | 'feedback'
+    // gameState: 'menu' | 'countdown' | 'playing' | 'feedback' | 'gameover'
     let gameState = 'menu';
     let countdownValue = 3;
     let countdownTimer = null;
@@ -67,6 +69,32 @@
 
     const MAX_LIVES = 3;
 
+    // ─── Ripples ─────────────────────────────────────────────────────────────────
+
+    let ripples = [];
+
+    function addRipple(x, y) {
+      ripples.push({ x, y, radius: BELL_RADIUS, opacity: 0.8 });
+    }
+
+    function updateRipples() {
+      ripples = ripples.filter(r => r.opacity > 0);
+      for (const r of ripples) {
+        r.radius += 4;
+        r.opacity -= 0.025;
+      }
+    }
+
+    function drawRipples() {
+      for (const r of ripples) {
+        ctx.beginPath();
+        ctx.arc(r.x, r.y, r.radius, 0, Math.PI * 2);
+        ctx.strokeStyle = `rgba(255, 255, 255, ${r.opacity})`;
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+      }
+    }
+
     // ─── Layout ──────────────────────────────────────────────────────────────────
 
     function getLayout() {
@@ -74,9 +102,12 @@
       const cx = canvas.width / 2;
       const cy = canvas.height / 2;
 
-      const cardsY = cy - CARD_HEIGHT / 2 - 40;
-      const buttonY = cy + CARD_HEIGHT / 2 + 20;
+      // Cards sit above center
+      const cardsY = cy - CARD_HEIGHT - 20;
       const cardsStartX = cx - totalCardsWidth / 2;
+
+      // Bell sits below cards
+      const bellY = cardsY + CARD_HEIGHT + 40 + BELL_RADIUS;
 
       return {
         cx,
@@ -86,17 +117,14 @@
           { x: cardsStartX + CARD_WIDTH + CARD_GAP, y: cardsY },
           { x: cardsStartX + 2 * (CARD_WIDTH + CARD_GAP), y: cardsY }
         ],
-        button: {
+        bell: { x: cx, y: bellY, radius: BELL_RADIUS },
+        menuButton: {
           x: cx - BUTTON_WIDTH / 2,
-          y: buttonY,
+          y: cy + 120,
           width: BUTTON_WIDTH,
           height: BUTTON_HEIGHT
         },
-        closeButton: {
-          x: canvas.width - 60,
-          y: 20,
-          size: 40
-        }
+        closeButton: { x: canvas.width - 56, y: 20, size: 36 }
       };
     }
 
@@ -115,7 +143,7 @@
       ctx.fillText(text, x, y);
     }
 
-    function drawRect(x, y, w, h, { fill = '#2a2a2a', stroke = COLOR_DIM, lineWidth = 2 } = {}) {
+    function drawRect(x, y, w, h, { fill = COLOR_DIMMER, stroke = COLOR_DIM, lineWidth = 1 } = {}) {
       ctx.fillStyle = fill;
       ctx.fillRect(x, y, w, h);
       ctx.strokeStyle = stroke;
@@ -130,21 +158,22 @@
       clearCanvas();
 
       // Title
-      drawText('pling!', layout.cx, layout.cy - 100, { size: 64 });
+      drawText('pling!', layout.cx, layout.cy - 110, { size: 72 });
 
       // How to play
-      drawText('count symbols across all cards', layout.cx, layout.cy - 30, { size: 14, color: '#666' });
-      drawText('spot exactly 5 of a kind → PLING!', layout.cx, layout.cy - 8, { size: 14, color: '#666' });
-      drawText('wrong press → lose a heart ♥', layout.cx, layout.cy + 14, { size: 14, color: '#666' });
+      drawText('count symbols across all cards', layout.cx, layout.cy - 35, { size: 13, color: COLOR_MUTED });
+      drawText('spot exactly 5 of a kind → PLING!', layout.cx, layout.cy - 14, { size: 13, color: COLOR_MUTED });
+      drawText('wrong press → lose a heart ♥', layout.cx, layout.cy + 7, { size: 13, color: COLOR_MUTED });
 
       // High score
-      drawText('how many can you get?', layout.cx, layout.cy + 42, { size: 14, color: '#555' });
-      drawText(`best: ${highScore}`, layout.cx, layout.cy + 65, { size: 18, color: '#888' });
+      drawText('how many can you get?', layout.cx, layout.cy + 45, { size: 13, color: '#333' });
+      drawText(`best: ${highScore}`, layout.cx, layout.cy + 68, { size: 20, color: '#666' });
 
-      // Start button (fixed position below content)
-      const btnY = layout.cy + 110;
-      drawRect(layout.cx - BUTTON_WIDTH / 2, btnY, BUTTON_WIDTH, BUTTON_HEIGHT);
-      drawText('start', layout.cx, btnY + BUTTON_HEIGHT / 2);
+      // Start button – inverted
+      const btn = layout.menuButton;
+      ctx.fillStyle = COLOR_FG;
+      ctx.fillRect(btn.x, btn.y, btn.width, btn.height);
+      drawText('start', btn.x + btn.width / 2, btn.y + btn.height / 2, { color: COLOR_BG });
     }
 
     function drawCountdown() {
@@ -155,9 +184,11 @@
     }
 
     function drawCard(x, y, card) {
+      // Border only when empty, subtle fill when card present
       drawRect(x, y, CARD_WIDTH, CARD_HEIGHT, {
-        fill: card ? '#2a2a2a' : '#222',
-        stroke: card ? COLOR_DIM : COLOR_DIMMER
+        fill: card ? '#111' : COLOR_BG,
+        stroke: card ? '#444' : '#222',
+        lineWidth: 1
       });
 
       if (card) {
@@ -181,52 +212,45 @@
       }
     }
 
-    function drawPlingButton(btn) {
-      let fill = '#2a2a2a';
-      let stroke = COLOR_DIM;
-      let color = COLOR_FG;
-      let text = 'PLING!';
+    function drawBell(bell) {
+      // Determine color based on state
+      let fill = '#1a1a1a';
+      let stroke = '#444';
+      let labelColor = COLOR_FG;
+      let label = 'pling!';
+      let labelSize = 18;
 
       if (gameState === 'feedback') {
         if (lastResult === 'correct') {
-          fill = '#166534';
-          stroke = '#22c55e';
-          color = '#4ade80';
-          text = 'correct!';
+          fill = '#052e16';
+          stroke = '#166534';
+          label = '✓';
+          labelColor = '#4ade80';
+          labelSize = 32;
         } else {
-          fill = '#7f1d1d';
-          stroke = '#ef4444';
-          color = '#f87171';
-          text = 'wrong!';
+          fill = '#2d0a0a';
+          stroke = '#7f1d1d';
+          label = '✗';
+          labelColor = '#f87171';
+          labelSize = 32;
         }
       }
 
-      drawRect(btn.x, btn.y, btn.width, btn.height, { fill, stroke });
-      drawText(text, btn.x + btn.width / 2, btn.y + btn.height / 2, { color });
-    }
+      // Circle
+      ctx.beginPath();
+      ctx.arc(bell.x, bell.y, bell.radius, 0, Math.PI * 2);
+      ctx.fillStyle = fill;
+      ctx.fill();
+      ctx.strokeStyle = stroke;
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
 
-    function drawCloseButton(cb) {
-      drawRect(cb.x, cb.y, cb.size, cb.size, { fill: '#2a2a2a', stroke: COLOR_DIM });
-      drawText('×', cb.x + cb.size / 2, cb.y + cb.size / 2, { size: 20, color: '#888' });
-    }
-
-    function drawGameOver() {
-      const layout = getLayout();
-      clearCanvas();
-
-      drawText('game over', layout.cx, layout.cy - 100, { size: 40 });
-      drawText(`score: ${score}`, layout.cx, layout.cy - 30, { size: 28 });
-
-      if (score > 0 && score === highScore) {
-        drawText('new record!', layout.cx, layout.cy + 20, { size: 18, color: '#4ade80' });
-      } else if (highScore > 0) {
-        drawText(`best: ${highScore}`, layout.cx, layout.cy + 20, { size: 18, color: '#888' });
-      }
-
-      // Back to menu button
-      const btn = layout.button;
-      drawRect(btn.x, btn.y, btn.width, btn.height);
-      drawText('menu', btn.x + btn.width / 2, btn.y + btn.height / 2);
+      // Label
+      ctx.font = `${labelSize}px ${FONT_MONO}`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = labelColor;
+      ctx.fillText(label, bell.x, bell.y);
     }
 
     function drawLives() {
@@ -237,7 +261,7 @@
         hearts += i < lives ? full : empty;
         if (i < MAX_LIVES - 1) hearts += ' ';
       }
-      drawText(hearts, 20, 40, { size: 24, color: '#e05555', align: 'left' });
+      drawText(hearts, 20, 36, { size: 20, color: '#c0392b', align: 'left' });
     }
 
     function drawGame() {
@@ -249,17 +273,44 @@
         drawCard(layout.cards[i].x, layout.cards[i].y, stacks[i]);
       }
 
-      // PLING button
-      drawPlingButton(layout.button);
+      // Ripples (behind bell)
+      drawRipples();
+
+      // Bell
+      drawBell(layout.bell);
 
       // Close button
-      drawCloseButton(layout.closeButton);
+      drawRect(layout.closeButton.x, layout.closeButton.y, layout.closeButton.size, layout.closeButton.size, {
+        fill: COLOR_BG,
+        stroke: '#333'
+      });
+      drawText('×', layout.closeButton.x + layout.closeButton.size / 2, layout.closeButton.y + layout.closeButton.size / 2, { size: 18, color: COLOR_MUTED });
 
-      // Lives
+      // Lives (top left)
       drawLives();
 
       // Score (top center)
-      drawText(`${score}`, layout.cx, 40, { size: 24, color: '#888' });
+      drawText(`${score}`, layout.cx, 36, { size: 20, color: '#444' });
+    }
+
+    function drawGameOver() {
+      const layout = getLayout();
+      clearCanvas();
+
+      drawText('game over', layout.cx, layout.cy - 90, { size: 36 });
+      drawText(`score: ${score}`, layout.cx, layout.cy - 20, { size: 28 });
+
+      if (score > 0 && score === highScore) {
+        drawText('new record!', layout.cx, layout.cy + 25, { size: 14, color: '#4ade80' });
+      } else {
+        drawText(`best: ${highScore}`, layout.cx, layout.cy + 25, { size: 14, color: '#444' });
+      }
+
+      // Back to menu button – inverted
+      const btn = layout.menuButton;
+      ctx.fillStyle = COLOR_FG;
+      ctx.fillRect(btn.x, btn.y, btn.width, btn.height);
+      drawText('menu', btn.x + btn.width / 2, btn.y + btn.height / 2, { color: COLOR_BG });
     }
 
     // ─── Main draw ───────────────────────────────────────────────────────────────
@@ -276,6 +327,14 @@
       }
     }
 
+    // ─── Animation loop ──────────────────────────────────────────────────────────
+
+    function loop() {
+      updateRipples();
+      draw();
+      requestAnimationFrame(loop);
+    }
+
     // ─── Game logic ──────────────────────────────────────────────────────────────
 
     function randomCard() {
@@ -287,7 +346,6 @@
     function addNextCard() {
       stacks[currentStackIndex] = randomCard();
       currentStackIndex = (currentStackIndex + 1) % 3;
-      draw();
     }
 
     function countSymbols() {
@@ -307,15 +365,22 @@
     // ─── Transitions ─────────────────────────────────────────────────────────────
 
     function goToMenu() {
-      // Stop everything
       if (gameLoop) { clearInterval(gameLoop); gameLoop = null; }
       if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
-
+      ripples = [];
       stacks = [null, null, null];
       currentStackIndex = 0;
       lastResult = null;
       gameState = 'menu';
-      draw();
+    }
+
+    function goToGameOver() {
+      if (gameLoop) { clearInterval(gameLoop); gameLoop = null; }
+      if (score > highScore) {
+        highScore = score;
+        localStorage.setItem('highScore', highScore);
+      }
+      gameState = 'gameover';
     }
 
     function startCountdown() {
@@ -323,7 +388,6 @@
       countdownValue = 3;
       lives = MAX_LIVES;
       score = 0;
-      draw();
 
       countdownTimer = setInterval(() => {
         countdownValue--;
@@ -331,8 +395,6 @@
           clearInterval(countdownTimer);
           countdownTimer = null;
           startPlaying();
-        } else {
-          draw();
         }
       }, 1000);
     }
@@ -341,41 +403,27 @@
       gameState = 'playing';
       stacks = [null, null, null];
       currentStackIndex = 0;
-      draw();
-
       gameLoop = setInterval(addNextCard, CARD_INTERVAL);
     }
 
-    function checkPling() {
+    function checkPling(x, y) {
       if (gameLoop) { clearInterval(gameLoop); gameLoop = null; }
 
       lastResult = hasExactlyFive() ? 'correct' : 'wrong';
       if (lastResult === 'correct') score++;
       if (lastResult === 'wrong') lives--;
 
+      addRipple(x, y);
+
       gameState = 'feedback';
-      draw();
 
       setTimeout(() => {
         if (lives === 0) {
           goToGameOver();
         } else {
-          startPlaying(); // continue
+          startPlaying();
         }
       }, FEEDBACK_DURATION);
-    }
-
-    function goToGameOver() {
-      if (gameLoop) { clearInterval(gameLoop); gameLoop = null; }
-
-      // Update high score
-      if (score > highScore) {
-        highScore = score;
-        localStorage.setItem('highScore', highScore);
-      }
-
-      gameState = 'gameover';
-      draw();
     }
 
     // ─── Input ───────────────────────────────────────────────────────────────────
@@ -385,22 +433,24 @@
              y >= rect.y && y <= rect.y + (rect.height || rect.size);
     }
 
+    function isInsideBell(x, y, bell) {
+      const dx = x - bell.x;
+      const dy = y - bell.y;
+      return Math.sqrt(dx * dx + dy * dy) <= bell.radius;
+    }
+
     function handlePress(x, y) {
       const layout = getLayout();
 
       if (gameState === 'menu') {
-        const menuBtn = { x: layout.cx - BUTTON_WIDTH / 2, y: layout.cy + 110, width: BUTTON_WIDTH, height: BUTTON_HEIGHT };
-        if (isInside(x, y, menuBtn)) startCountdown();
+        if (isInside(x, y, layout.menuButton)) startCountdown();
 
       } else if (gameState === 'playing') {
         if (isInside(x, y, layout.closeButton)) goToMenu();
-        else if (isInside(x, y, layout.button)) checkPling();
-
-      } else if (gameState === 'feedback') {
-        // ignore all input during feedback
+        else if (isInsideBell(x, y, layout.bell)) checkPling(layout.bell.x, layout.bell.y);
 
       } else if (gameState === 'gameover') {
-        if (isInside(x, y, layout.button)) goToMenu();
+        if (isInside(x, y, layout.menuButton)) goToMenu();
       }
     }
 
@@ -415,14 +465,13 @@
     window.addEventListener('resize', () => {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
-      draw();
     });
 
     // ─── Init ────────────────────────────────────────────────────────────────────
 
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
-    draw();
+    loop();
   </script>
 </body>
 </html>

@@ -63,7 +63,7 @@
     let lastResult = null; // 'correct' | 'wrong'
     let lives = 3;
     let score = 0;
-    let highScore = 0;
+    let highScore = parseInt(localStorage.getItem('highScore') || '0', 10);
 
     const MAX_LIVES = 3;
 
@@ -369,7 +369,10 @@
       if (gameLoop) { clearInterval(gameLoop); gameLoop = null; }
 
       // Update high score
-      if (score > highScore) highScore = score;
+      if (score > highScore) {
+        highScore = score;
+        localStorage.setItem('highScore', highScore);
+      }
 
       gameState = 'gameover';
       draw();

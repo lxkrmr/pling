@@ -151,7 +151,8 @@
       const heartsH       = 24;
 
       const zoneH = scoreH + scoreGap + CARD_HEIGHT + cardBellGap + BELL_RADIUS * 2 + bellHeartsGap + heartsH;
-      const zoneY = cy - zoneH / 2;
+      const verticalOffset = 40; // shift zone down for thumb reach
+      const zoneY = cy - zoneH / 2 + verticalOffset;
 
       const scoreY  = zoneY + scoreH / 2;
       const cardsY  = zoneY + scoreH + scoreGap;
@@ -376,7 +377,7 @@
       drawText('×', layout.closeButton.x + layout.closeButton.size / 2, layout.closeButton.y + layout.closeButton.size / 2, { size: 18, color: COLOR_MUTED });
 
       // Score (above cards)
-      drawText(`${score}`, layout.cx, layout.scoreY, { size: 20, color: COLOR_SUBTLE });
+      drawText(`${score}`, layout.cx, layout.scoreY, { size: 32, color: COLOR_SUBTLE });
 
       // Lives (below bell, centered)
       drawLives(layout.cx, layout.heartsY);

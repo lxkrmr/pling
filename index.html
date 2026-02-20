@@ -62,6 +62,8 @@
     let gameLoop = null;
     let lastResult = null; // 'correct' | 'wrong'
     let lives = 3;
+    let score = 0;
+    let highScore = 0;
 
     const MAX_LIVES = 3;
 
@@ -129,6 +131,11 @@
 
       // Title
       drawText('pling!', layout.cx, layout.cy - 80, { size: 64 });
+
+      // High score
+      if (highScore > 0) {
+        drawText(`best: ${highScore}`, layout.cx, layout.cy - 20, { size: 18, color: '#888' });
+      }
 
       // Start button
       const btn = layout.button;
@@ -199,6 +206,25 @@
       drawText('×', cb.x + cb.size / 2, cb.y + cb.size / 2, { size: 20, color: '#888' });
     }
 
+    function drawGameOver() {
+      const layout = getLayout();
+      clearCanvas();
+
+      drawText('game over', layout.cx, layout.cy - 100, { size: 40 });
+      drawText(`score: ${score}`, layout.cx, layout.cy - 30, { size: 28 });
+
+      if (score > 0 && score === highScore) {
+        drawText('new record!', layout.cx, layout.cy + 20, { size: 18, color: '#4ade80' });
+      } else if (highScore > 0) {
+        drawText(`best: ${highScore}`, layout.cx, layout.cy + 20, { size: 18, color: '#888' });
+      }
+
+      // Back to menu button
+      const btn = layout.button;
+      drawRect(btn.x, btn.y, btn.width, btn.height);
+      drawText('menu', btn.x + btn.width / 2, btn.y + btn.height / 2);
+    }
+
     function drawLives() {
       const full = '♥';
       const empty = '♡';
@@ -227,6 +253,9 @@
 
       // Lives
       drawLives();
+
+      // Score (top center)
+      drawText(`${score}`, layout.cx, 40, { size: 24, color: '#888' });
     }
 
     // ─── Main draw ───────────────────────────────────────────────────────────────
@@ -238,6 +267,8 @@
         drawCountdown();
       } else if (gameState === 'playing' || gameState === 'feedback') {
         drawGame();
+      } else if (gameState === 'gameover') {
+        drawGameOver();
       }
     }
 
@@ -287,6 +318,7 @@
       gameState = 'countdown';
       countdownValue = 3;
       lives = MAX_LIVES;
+      score = 0;
       draw();
 
       countdownTimer = setInterval(() => {
@@ -314,6 +346,7 @@
       if (gameLoop) { clearInterval(gameLoop); gameLoop = null; }
 
       lastResult = hasExactlyFive() ? 'correct' : 'wrong';
+      if (lastResult === 'correct') score++;
       if (lastResult === 'wrong') lives--;
 
       gameState = 'feedback';
@@ -321,11 +354,21 @@
 
       setTimeout(() => {
         if (lives === 0) {
-          goToMenu(); // game over
+          goToGameOver();
         } else {
           startPlaying(); // continue
         }
       }, FEEDBACK_DURATION);
+    }
+
+    function goToGameOver() {
+      if (gameLoop) { clearInterval(gameLoop); gameLoop = null; }
+
+      // Update high score
+      if (score > highScore) highScore = score;
+
+      gameState = 'gameover';
+      draw();
     }
 
     // ─── Input ───────────────────────────────────────────────────────────────────
@@ -347,6 +390,9 @@
 
       } else if (gameState === 'feedback') {
         // ignore all input during feedback
+
+      } else if (gameState === 'gameover') {
+        if (isInside(x, y, layout.button)) goToMenu();
       }
     }
 

@@ -93,15 +93,27 @@
 
       if (card) {
         ctx.fillStyle = '#e0e0e0';
-        ctx.font = '24px "SF Mono", Monaco, Inconsolata, "Fira Code", monospace';
+        ctx.font = '20px "SF Mono", Monaco, Inconsolata, "Fira Code", monospace';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
 
-        const lineHeight = 28;
-        const startY = y + CARD_HEIGHT / 2 - ((card.count - 1) * lineHeight) / 2;
+        // Dice-style positions (relative to card center)
+        // Each position is [offsetX, offsetY] as fraction of card size
+        const padding = 28;
+        const cx = x + CARD_WIDTH / 2;
+        const cy = y + CARD_HEIGHT / 2;
+        const ox = CARD_WIDTH / 2 - padding; // horizontal offset
+        const oy = CARD_HEIGHT / 2 - padding; // vertical offset
 
-        for (let i = 0; i < card.count; i++) {
-          ctx.fillText(card.symbol, x + CARD_WIDTH / 2, startY + i * lineHeight);
+        const positions = {
+          1: [[0, 0]],
+          2: [[-ox, -oy], [ox, oy]],
+          3: [[-ox, -oy], [0, 0], [ox, oy]],
+          4: [[-ox, -oy], [ox, -oy], [-ox, oy], [ox, oy]]
+        };
+
+        for (const [dx, dy] of positions[card.count]) {
+          ctx.fillText(card.symbol, cx + dx, cy + dy);
         }
       }
     }

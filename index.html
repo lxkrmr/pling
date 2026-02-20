@@ -53,21 +53,102 @@
     const BASE_INTERVAL = 1200;  // ms between cards at score 0
     const MIN_INTERVAL  = 500;   // fastest possible
     const FEEDBACK_DURATION = 1000; // ms to show correct/wrong
-    const COUNTDOWN_STEPS = [
-      { text: 'ready?', duration: 700 },
-      { text: 'go!',    duration: 500 }
-    ];
 
     const FONT_MONO = '"SF Mono", Monaco, Inconsolata, "Fira Code", monospace';
-    const COLOR_BG      = '#0d1117'; // github dark background
-    const COLOR_SURFACE = '#161b22'; // cards, button fills
-    const COLOR_BORDER  = '#30363d'; // borders
-    const COLOR_FG      = '#e6edf3'; // primary text
-    const COLOR_MUTED   = '#8b949e'; // secondary text
-    const COLOR_SUBTLE  = '#6e7681'; // muted text
-    const COLOR_CORRECT = '#388bfd'; // correct – colorblind safe blue
-    const COLOR_WRONG   = '#e3b341'; // wrong   – colorblind safe orange
-    const COLOR_RED     = '#f85149'; // hearts only
+    const COLOR_BG      = '#0d1117';
+    const COLOR_SURFACE = '#161b22';
+    const COLOR_BORDER  = '#30363d';
+    const COLOR_FG      = '#e6edf3';
+    const COLOR_MUTED   = '#8b949e';
+    const COLOR_SUBTLE  = '#6e7681';
+    const COLOR_CORRECT = '#388bfd';
+    const COLOR_WRONG   = '#e3b341';
+    const COLOR_RED     = '#f85149';
+
+    // ─── Language ────────────────────────────────────────────────────────────────
+
+    let lang = localStorage.getItem('lang') ||
+               (navigator.language.startsWith('de') ? 'de' : 'en');
+
+    const T = {
+      en: {
+        // menu
+        howTo1:       'count symbols across all cards',
+        howTo2:       'spot exactly 5 of a kind → PLING!',
+        howTo3prefix: 'wrong press → lose a heart ',
+        tagline:      'how many can you get?',
+        best:         n => `best: ${n}`,
+        start:        'start',
+        // countdown
+        ready:        'ready?',
+        go:           'go!',
+        // game
+        rule:         'exactly 5 of a kind → pling!',
+        atScore:      n => `at ${n}`,
+        // gameover
+        gameOver:     'game over',
+        scoreLabel:   n => `score: ${n}`,
+        newRecord:    'new record!',
+        bestLabel:    n => `best: ${n}`,
+        menu:         'menu',
+        // help
+        helpTitle:    'how to play',
+        helpStep1:    '① cards appear automatically',
+        helpStep2:    '② count the same symbols across all cards',
+        helpStep3:    '③ exactly 5? → hit PLING!',
+        helpStep4:    '④ wrong press → lose a ♥',
+        helpExample:  'example:',
+        helpPlus:     '+',
+        helpEq:       (a, b, sym) => `${a} + ${b} ${sym} = ${a+b}`,
+        helpYes:      '→ PLING! ✓',
+        helpNo:       '→ no PLING ✗',
+        helpBack:     '← back',
+        helpNote:     'symbols and counts change every round',
+        // lang toggle
+        langLabel:    'DE',
+      },
+      de: {
+        // menu
+        howTo1:       'Zähle Symbole auf allen Karten zusammen',
+        howTo2:       'Genau 5 gleiche? → PLING drücken!',
+        howTo3prefix: 'Falsch gedrückt → Herz verlieren ',
+        tagline:      'Wie viele schaffst du?',
+        best:         n => `Rekord: ${n}`,
+        start:        'Start',
+        // countdown
+        ready:        'bereit?',
+        go:           'los!',
+        // game
+        rule:         'genau 5 gleiche → pling!',
+        atScore:      n => `ab ${n}`,
+        // gameover
+        gameOver:     'Game Over',
+        scoreLabel:   n => `Punkte: ${n}`,
+        newRecord:    'Neuer Rekord!',
+        bestLabel:    n => `Rekord: ${n}`,
+        menu:         'Menü',
+        // help
+        helpTitle:    'Spielanleitung',
+        helpStep1:    '① Karten erscheinen automatisch',
+        helpStep2:    '② Zähle gleiche Symbole auf allen Karten',
+        helpStep3:    '③ Genau 5? → PLING drücken!',
+        helpStep4:    '④ Falsch gedrückt → ♥ verlieren',
+        helpExample:  'Beispiel:',
+        helpPlus:     '+',
+        helpEq:       (a, b, sym) => `${a} + ${b} ${sym} = ${a+b}`,
+        helpYes:      '→ PLING! ✓',
+        helpNo:       '→ kein PLING ✗',
+        helpBack:     '← zurück',
+        helpNote:     'Symbole und Zahlen ändern sich jede Runde',
+        // lang toggle
+        langLabel:    'EN',
+      }
+    };
+
+    function t(key, ...args) {
+      const val = T[lang][key];
+      return typeof val === 'function' ? val(...args) : val;
+    }
 
     // ─── Symbols ─────────────────────────────────────────────────────────────────
 
@@ -75,7 +156,7 @@
 
     // ─── State ───────────────────────────────────────────────────────────────────
 
-    // gameState: 'menu' | 'countdown' | 'playing' | 'feedback' | 'gameover'
+    // gameState: 'menu' | 'countdown' | 'playing' | 'feedback' | 'gameover' | 'help'
     let gameState = 'menu';
     let countdownText = '';
     let countdownTimer = null;
@@ -89,11 +170,11 @@
     let highScore = parseInt(localStorage.getItem('highScore') || '0', 10);
 
     const MAX_LIVES = 3;
-    const IS_STANDALONE = window.matchMedia('(display-mode: standalone)').matches;
+
 
     // ─── Card flashes ────────────────────────────────────────────────────────────
 
-    let cardFlashes = []; // { index, opacity }
+    let cardFlashes = [];
 
     function addCardFlash(index) {
       cardFlashes = cardFlashes.filter(f => f.index !== index);
@@ -102,9 +183,7 @@
 
     function updateCardFlashes() {
       cardFlashes = cardFlashes.filter(f => f.opacity > 0);
-      for (const f of cardFlashes) {
-        f.opacity -= 0.04;
-      }
+      for (const f of cardFlashes) f.opacity -= 0.04;
     }
 
     function getCardFlash(index) {
@@ -143,7 +222,6 @@
       const cx = canvas.width / 2;
       const cy = canvas.height / 2;
 
-      // Play zone – all elements calculated from here
       const scoreH        = 24;
       const scoreGap      = 16;
       const cardBellGap   = 28;
@@ -151,7 +229,7 @@
       const heartsH       = 24;
 
       const zoneH = scoreH + scoreGap + CARD_HEIGHT + cardBellGap + BELL_RADIUS * 2 + bellHeartsGap + heartsH;
-      const verticalOffset = 40; // shift zone down for thumb reach
+      const verticalOffset = 40;
       const zoneY = cy - zoneH / 2 + verticalOffset;
 
       const scoreY  = zoneY + scoreH / 2;
@@ -159,13 +237,14 @@
       const bellY   = cardsY + CARD_HEIGHT + cardBellGap + BELL_RADIUS;
       const heartsY = bellY + BELL_RADIUS + bellHeartsGap;
 
-      // Cards
       const totalCardsWidth = STACK_COUNT * CARD_WIDTH + (STACK_COUNT - 1) * CARD_GAP;
       const cardsStartX = cx - totalCardsWidth / 2;
       const cards = [];
       for (let i = 0; i < STACK_COUNT; i++) {
         cards.push({ x: cardsStartX + i * (CARD_WIDTH + CARD_GAP), y: cardsY });
       }
+
+      const INFO_RADIUS = 22; // round info button radius
 
       return {
         cx,
@@ -180,7 +259,25 @@
           width: BUTTON_WIDTH,
           height: BUTTON_HEIGHT
         },
-        closeButton: { x: canvas.width - 56, y: 20, size: 36 }
+        // round ? button – bottom-right corner, same spot on every screen
+        infoButton: {
+          x: canvas.width - 20 - INFO_RADIUS,
+          y: canvas.height - 20 - INFO_RADIUS,
+          radius: INFO_RADIUS
+        },
+        langButton: {
+          x: canvas.width - 60,
+          y: 16,
+          width: 44,
+          height: 28
+        },
+        closeButton: { x: canvas.width - 56, y: 20, size: 36 },
+        backButton: {
+          x: 16,
+          y: 16,
+          width: 80,
+          height: 32
+        }
       };
     }
 
@@ -199,15 +296,42 @@
       ctx.fillText(text, x, y);
     }
 
-    function drawRect(x, y, w, h, { fill = COLOR_SURFACE, stroke = COLOR_BORDER, lineWidth = 1 } = {}) {
+    function drawRect(x, y, w, h, { fill = COLOR_SURFACE, stroke = COLOR_BORDER, lineWidth = 1, radius = 0 } = {}) {
       ctx.fillStyle = fill;
-      ctx.fillRect(x, y, w, h);
-      ctx.strokeStyle = stroke;
-      ctx.lineWidth = lineWidth;
-      ctx.strokeRect(x, y, w, h);
+      if (radius > 0) {
+        ctx.beginPath();
+        ctx.roundRect(x, y, w, h, radius);
+        ctx.fill();
+        ctx.strokeStyle = stroke;
+        ctx.lineWidth = lineWidth;
+        ctx.stroke();
+      } else {
+        ctx.fillRect(x, y, w, h);
+        ctx.strokeStyle = stroke;
+        ctx.lineWidth = lineWidth;
+        ctx.strokeRect(x, y, w, h);
+      }
     }
 
     // ─── Draw screens ────────────────────────────────────────────────────────────
+
+    function drawLangToggle(layout) {
+      const { langButton: lb } = layout;
+      drawRect(lb.x, lb.y, lb.width, lb.height, { fill: COLOR_SURFACE, stroke: COLOR_BORDER, radius: 4 });
+      drawText(t('langLabel'), lb.x + lb.width / 2, lb.y + lb.height / 2, { size: 12, color: COLOR_MUTED });
+    }
+
+    function drawInfoButton(layout) {
+      const { x, y, radius } = layout.infoButton;
+      ctx.beginPath();
+      ctx.arc(x, y, radius, 0, Math.PI * 2);
+      ctx.fillStyle = COLOR_SURFACE;
+      ctx.fill();
+      ctx.strokeStyle = COLOR_BORDER;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      drawText('?', x, y, { size: 16, color: COLOR_MUTED });
+    }
 
     function drawMenu() {
       const layout = getLayout();
@@ -217,10 +341,11 @@
       drawText('pling!', layout.cx, layout.cy - 110, { size: 72 });
 
       // How to play
-      drawText('count symbols across all cards', layout.cx, layout.cy - 35, { size: 13, color: COLOR_MUTED });
-      drawText('spot exactly 5 of a kind → PLING!', layout.cx, layout.cy - 14, { size: 13, color: COLOR_MUTED });
-      // Draw "wrong press → lose a heart" + red heart separately
-      const prefix = 'wrong press → lose a heart ';
+      drawText(t('howTo1'), layout.cx, layout.cy - 35, { size: 13, color: COLOR_MUTED });
+      drawText(t('howTo2'), layout.cx, layout.cy - 14, { size: 13, color: COLOR_MUTED });
+
+      // "wrong press → lose a heart ♥" with colored heart
+      const prefix = t('howTo3prefix');
       const heart = '♥';
       ctx.font = `13px ${FONT_MONO}`;
       const totalWidth = ctx.measureText(prefix + heart).width;
@@ -233,36 +358,37 @@
       ctx.fillText(heart, textStartX + ctx.measureText(prefix).width, layout.cy + 7);
 
       // High score
-      drawText('how many can you get?', layout.cx, layout.cy + 45, { size: 13, color: COLOR_SUBTLE });
-      drawText(`best: ${highScore}`, layout.cx, layout.cy + 68, { size: 20, color: COLOR_MUTED });
+      drawText(t('tagline'), layout.cx, layout.cy + 45, { size: 13, color: COLOR_SUBTLE });
+      drawText(t('best', highScore), layout.cx, layout.cy + 68, { size: 20, color: COLOR_MUTED });
 
       // Start button – inverted
       const btn = layout.menuButton;
       ctx.fillStyle = COLOR_FG;
       ctx.fillRect(btn.x, btn.y, btn.width, btn.height);
-      drawText('start', btn.x + btn.width / 2, btn.y + btn.height / 2, { color: COLOR_BG });
+      drawText(t('start'), btn.x + btn.width / 2, btn.y + btn.height / 2, { color: COLOR_BG });
 
-      // PWA hint – only when not already installed
-      if (!IS_STANDALONE) {
-        drawText('add to home screen for the best experience', layout.cx, canvas.height - 28, { size: 11, color: COLOR_SUBTLE });
-      }
+      // Language toggle (top right)
+      drawLangToggle(layout);
+
+      // Info button (bottom right)
+      drawInfoButton(layout);
+
+
     }
 
     function drawCountdown() {
       const layout = getLayout();
       clearCanvas();
-
       drawText(countdownText, layout.cx, layout.cy, { size: 64 });
     }
 
     function drawLockedCard(x, y, threshold) {
       drawRect(x, y, CARD_WIDTH, CARD_HEIGHT, { fill: COLOR_BG, stroke: '#21262d' });
       drawText('+', x + CARD_WIDTH / 2, y + CARD_HEIGHT / 2 - 14, { size: 22, color: '#30363d' });
-      drawText(`at ${threshold}`, x + CARD_WIDTH / 2, y + CARD_HEIGHT / 2 + 14, { size: 10, color: '#30363d' });
+      drawText(t('atScore', threshold), x + CARD_WIDTH / 2, y + CARD_HEIGHT / 2 + 14, { size: 10, color: '#30363d' });
     }
 
     function drawCard(x, y, card, index) {
-      // Border only when empty, subtle fill when card present
       drawRect(x, y, CARD_WIDTH, CARD_HEIGHT, {
         fill: card ? COLOR_SURFACE : COLOR_BG,
         stroke: card ? COLOR_BORDER : '#21262d',
@@ -276,7 +402,6 @@
         const ox = CARD_WIDTH / 2 - padding;
         const oy = CARD_HEIGHT / 2 - padding;
 
-        // Dice-style positions
         const positions = {
           1: [[0, 0]],
           2: [[-ox, -oy], [ox, oy]],
@@ -289,7 +414,6 @@
         }
       }
 
-      // Flash highlight when card was just updated
       const flash = getCardFlash(index);
       if (flash) {
         ctx.strokeStyle = `rgba(255, 255, 255, ${flash.opacity})`;
@@ -299,7 +423,6 @@
     }
 
     function drawBell(bell) {
-      // Determine color based on state
       let fill = COLOR_SURFACE;
       let stroke = COLOR_BORDER;
       let labelColor = COLOR_FG;
@@ -322,7 +445,6 @@
         }
       }
 
-      // Circle
       ctx.beginPath();
       ctx.arc(bell.x, bell.y, bell.radius, 0, Math.PI * 2);
       ctx.fillStyle = fill;
@@ -331,7 +453,6 @@
       ctx.lineWidth = 1.5;
       ctx.stroke();
 
-      // Label
       ctx.font = `${labelSize}px ${FONT_MONO}`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
@@ -354,7 +475,6 @@
       const layout = getLayout();
       clearCanvas();
 
-      // Cards – active ones show content, locked ones show threshold
       for (let i = 0; i < STACK_COUNT; i++) {
         if (i < activeStacks) {
           drawCard(layout.cards[i].x, layout.cards[i].y, stacks[i], i);
@@ -363,10 +483,7 @@
         }
       }
 
-      // Ripples (behind bell)
       drawRipples();
-
-      // Bell
       drawBell(layout.bell);
 
       // Close button
@@ -376,34 +493,148 @@
       });
       drawText('×', layout.closeButton.x + layout.closeButton.size / 2, layout.closeButton.y + layout.closeButton.size / 2, { size: 18, color: COLOR_MUTED });
 
-      // Score (above cards)
       drawText(`${score}`, layout.cx, layout.scoreY, { size: 32, color: COLOR_SUBTLE });
-
-      // Lives (below bell, centered)
       drawLives(layout.cx, layout.heartsY);
+      drawText(t('rule'), layout.cx, canvas.height - 28, { size: 11, color: COLOR_SUBTLE });
 
-      // Rule reminder (bottom center)
-      drawText('exactly 5 of a kind → pling!', layout.cx, canvas.height - 28, { size: 11, color: COLOR_SUBTLE });
+      // Info button (bottom right)
+      drawInfoButton(layout);
     }
 
     function drawGameOver() {
       const layout = getLayout();
       clearCanvas();
 
-      drawText('game over', layout.cx, layout.cy - 90, { size: 36 });
-      drawText(`score: ${score}`, layout.cx, layout.cy - 20, { size: 28 });
+      drawText(t('gameOver'), layout.cx, layout.cy - 90, { size: 36 });
+      drawText(t('scoreLabel', score), layout.cx, layout.cy - 20, { size: 28 });
 
       if (score > 0 && score === highScore) {
-        drawText('new record!', layout.cx, layout.cy + 25, { size: 14, color: COLOR_CORRECT });
+        drawText(t('newRecord'), layout.cx, layout.cy + 25, { size: 14, color: COLOR_CORRECT });
       } else {
-        drawText(`best: ${highScore}`, layout.cx, layout.cy + 25, { size: 14, color: COLOR_SUBTLE });
+        drawText(t('bestLabel', highScore), layout.cx, layout.cy + 25, { size: 14, color: COLOR_SUBTLE });
       }
 
-      // Back to menu button – inverted
       const btn = layout.menuButton;
       ctx.fillStyle = COLOR_FG;
       ctx.fillRect(btn.x, btn.y, btn.width, btn.height);
-      drawText('menu', btn.x + btn.width / 2, btn.y + btn.height / 2, { color: COLOR_BG });
+      drawText(t('menu'), btn.x + btn.width / 2, btn.y + btn.height / 2, { color: COLOR_BG });
+
+      // Info button (bottom right)
+      drawInfoButton(layout);
+    }
+
+    // ─── Help screen ─────────────────────────────────────────────────────────────
+
+    // Draws a mini card (scaled down) for help examples
+    function drawMiniCard(x, y, card, w, h) {
+      drawRect(x, y, w, h, { fill: COLOR_SURFACE, stroke: COLOR_BORDER });
+      if (!card) return;
+
+      const padding = 14;
+      const cx = x + w / 2;
+      const cy = y + h / 2;
+      const ox = w / 2 - padding;
+      const oy = h / 2 - padding;
+
+      const positions = {
+        1: [[0, 0]],
+        2: [[-ox, -oy], [ox, oy]],
+        3: [[-ox, -oy], [0, 0], [ox, oy]],
+        4: [[-ox, -oy], [ox, -oy], [-ox, oy], [ox, oy]]
+      };
+
+      for (const [dx, dy] of positions[card.count]) {
+        drawText(card.symbol, cx + dx, cy + dy, { size: 14 });
+      }
+    }
+
+    // Draws one example row: [card1] + [card2] = total → result label
+    function drawHelpExample(cx, y, card1, card2, isPling) {
+      const W = 62, H = 90;
+      const gap = 10;
+      const totalRowW = W + gap + 18 + gap + W; // card + "+" + card
+      const startX = cx - totalRowW / 2;
+
+      drawMiniCard(startX, y, card1, W, H);
+
+      // "+" between cards
+      drawText('+', startX + W + gap / 2 + 9, y + H / 2, { size: 18, color: COLOR_SUBTLE });
+
+      drawMiniCard(startX + W + gap + 18 + gap, y, card2, W, H);
+
+      // Count equation below cards
+      const total = card1.count + card2.count;
+      const sym = card1.symbol;
+      const eqText = `${card1.count} + ${card2.count} ${sym} = ${total}`;
+      drawText(eqText, cx, y + H + 18, { size: 13, color: COLOR_MUTED });
+
+      // Result
+      const resultText = isPling ? t('helpYes') : t('helpNo');
+      const resultColor = isPling ? COLOR_CORRECT : COLOR_WRONG;
+      drawText(resultText, cx, y + H + 38, { size: 14, color: resultColor });
+    }
+
+    function drawHelp() {
+      const layout = getLayout();
+      clearCanvas();
+
+      const cx = layout.cx;
+
+      // Vertical centering: measure total content height, then compute start y
+      // so the block is centered between the nav bar and the bottom of the canvas.
+      const CONTENT_H = 518; // title center → note bottom (measured layout)
+      const navBottom = 56;  // back button bottom + small gap
+      const bottomPad = 20;
+      let y = navBottom + Math.max(0, (canvas.height - navBottom - bottomPad - CONTENT_H) / 2);
+
+      // Back button (top left)
+      const bb = layout.backButton;
+      drawRect(bb.x, bb.y, bb.width, bb.height, { fill: COLOR_SURFACE, stroke: COLOR_BORDER, radius: 4 });
+      drawText(t('helpBack'), bb.x + bb.width / 2, bb.y + bb.height / 2, { size: 12, color: COLOR_MUTED });
+
+      // Language toggle (top right)
+      drawLangToggle(layout);
+
+      // Title
+      drawText(t('helpTitle'), cx, y, { size: 26 });
+      y += 44;
+
+      // Steps
+      const steps = [t('helpStep1'), t('helpStep2'), t('helpStep3'), t('helpStep4')];
+      for (const step of steps) {
+        drawText(step, cx, y, { size: 13, color: COLOR_MUTED });
+        y += 22;
+      }
+
+      y += 18;
+
+      // Divider
+      ctx.strokeStyle = COLOR_BORDER;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(cx - 140, y);
+      ctx.lineTo(cx + 140, y);
+      ctx.stroke();
+      y += 18;
+
+      // "example:" label
+      drawText(t('helpExample'), cx, y, { size: 13, color: COLOR_SUBTLE });
+      y += 22;
+
+      // Example 1: 3 ● + 2 ● = 5 → PLING!
+      const ex1card1 = { symbol: '●', count: 3 };
+      const ex1card2 = { symbol: '●', count: 2 };
+      drawHelpExample(cx, y, ex1card1, ex1card2, true);
+      y += 90 + 50 + 14;
+
+      // Example 2: 2 ■ + 1 ■ = 3 → no PLING
+      const ex2card1 = { symbol: '■', count: 2 };
+      const ex2card2 = { symbol: '■', count: 1 };
+      drawHelpExample(cx, y, ex2card1, ex2card2, false);
+      y += 90 + 50 + 22;
+
+      // Note
+      drawText(t('helpNote'), cx, y, { size: 11, color: COLOR_SUBTLE });
     }
 
     // ─── Main draw ───────────────────────────────────────────────────────────────
@@ -417,6 +648,8 @@
         drawGame();
       } else if (gameState === 'gameover') {
         drawGameOver();
+      } else if (gameState === 'help') {
+        drawHelp();
       }
     }
 
@@ -437,7 +670,7 @@
 
     function randomCard() {
       const symbol = SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)];
-      const count = Math.floor(Math.random() * 4) + 1; // 1–4
+      const count = Math.floor(Math.random() * 4) + 1;
       return { symbol, count };
     }
 
@@ -490,13 +723,18 @@
       score = 0;
       activeStacks = 2;
 
+      const steps = [
+        { text: t('ready'), duration: 700 },
+        { text: t('go'),    duration: 500 }
+      ];
+
       function runStep(index) {
-        if (index >= COUNTDOWN_STEPS.length) {
+        if (index >= steps.length) {
           countdownTimer = null;
           startPlaying();
           return;
         }
-        const step = COUNTDOWN_STEPS[index];
+        const step = steps[index];
         countdownText = step.text;
         countdownTimer = setTimeout(() => runStep(index + 1), step.duration);
       }
@@ -505,13 +743,13 @@
 
     function checkUnlock() {
       let newActive = 2;
-      for (const t of UNLOCK_THRESHOLDS) {
-        if (score >= t) newActive++;
+      for (const threshold of UNLOCK_THRESHOLDS) {
+        if (score >= threshold) newActive++;
       }
       newActive = Math.min(newActive, STACK_COUNT);
       if (newActive > activeStacks) {
         activeStacks = newActive;
-        addCardFlash(activeStacks - 1); // flash the newly unlocked stack
+        addCardFlash(activeStacks - 1);
       }
     }
 
@@ -537,7 +775,6 @@
       if (lastResult === 'wrong') lives--;
 
       addRipple(x, y);
-
       gameState = 'feedback';
 
       setTimeout(() => {
@@ -556,24 +793,42 @@
              y >= rect.y && y <= rect.y + (rect.height || rect.size);
     }
 
+    function isInsideCircle(x, y, circle) {
+      const dx = x - circle.x;
+      const dy = y - circle.y;
+      return Math.sqrt(dx * dx + dy * dy) <= circle.radius;
+    }
+
     function isInsideBell(x, y, bell) {
-      const dx = x - bell.x;
-      const dy = y - bell.y;
-      return Math.sqrt(dx * dx + dy * dy) <= bell.radius;
+      return isInsideCircle(x, y, bell);
+    }
+
+    function toggleLang() {
+      lang = lang === 'en' ? 'de' : 'en';
+      localStorage.setItem('lang', lang);
+      document.documentElement.lang = lang;
     }
 
     function handlePress(x, y) {
       const layout = getLayout();
 
       if (gameState === 'menu') {
-        if (isInside(x, y, layout.menuButton)) startCountdown();
+        if (isInside(x, y, layout.langButton))        { toggleLang(); return; }
+        if (isInsideCircle(x, y, layout.infoButton))  { gameState = 'help'; return; }
+        if (isInside(x, y, layout.menuButton))        { startCountdown(); return; }
+
+      } else if (gameState === 'help') {
+        if (isInside(x, y, layout.langButton))  { toggleLang(); return; }
+        if (isInside(x, y, layout.backButton))  { gameState = 'menu'; return; }
 
       } else if (gameState === 'playing') {
-        if (isInside(x, y, layout.closeButton)) goToMenu();
-        else if (isInsideBell(x, y, layout.bell)) checkPling(layout.bell.x, layout.bell.y);
+        if (isInside(x, y, layout.closeButton))       { goToMenu(); return; }
+        if (isInsideCircle(x, y, layout.infoButton))  { goToMenu(); gameState = 'help'; return; }
+        if (isInsideBell(x, y, layout.bell))          { checkPling(layout.bell.x, layout.bell.y); return; }
 
       } else if (gameState === 'gameover') {
-        if (isInside(x, y, layout.menuButton)) goToMenu();
+        if (isInsideCircle(x, y, layout.infoButton))  { gameState = 'help'; return; }
+        if (isInside(x, y, layout.menuButton))        { goToMenu(); return; }
       }
     }
 
@@ -609,7 +864,6 @@
     resizeCanvas();
     loop();
 
-    // Register service worker for PWA / offline support
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('./sw.js');
     }

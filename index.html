@@ -27,6 +27,9 @@
 
     canvas {
       display: block;
+      border-radius: 12px;
+      /* border only visible on desktop when canvas is smaller than viewport */
+      box-shadow: 0 0 0 1px #30363d;
     }
   </style>
 </head>
@@ -137,17 +140,27 @@
     // ─── Layout ──────────────────────────────────────────────────────────────────
 
     function getLayout() {
-      const totalCardsWidth = STACK_COUNT * CARD_WIDTH + (STACK_COUNT - 1) * CARD_GAP;
       const cx = canvas.width / 2;
       const cy = canvas.height / 2;
 
-      // Cards sit above center
-      const cardsY = cy - CARD_HEIGHT - 20;
+      // Play zone – all elements calculated from here
+      const scoreH        = 24;
+      const scoreGap      = 16;
+      const cardBellGap   = 28;
+      const bellHeartsGap = 20;
+      const heartsH       = 24;
+
+      const zoneH = scoreH + scoreGap + CARD_HEIGHT + cardBellGap + BELL_RADIUS * 2 + bellHeartsGap + heartsH;
+      const zoneY = cy - zoneH / 2;
+
+      const scoreY  = zoneY + scoreH / 2;
+      const cardsY  = zoneY + scoreH + scoreGap;
+      const bellY   = cardsY + CARD_HEIGHT + cardBellGap + BELL_RADIUS;
+      const heartsY = bellY + BELL_RADIUS + bellHeartsGap;
+
+      // Cards
+      const totalCardsWidth = STACK_COUNT * CARD_WIDTH + (STACK_COUNT - 1) * CARD_GAP;
       const cardsStartX = cx - totalCardsWidth / 2;
-
-      // Bell sits below cards
-      const bellY = cardsY + CARD_HEIGHT + 40 + BELL_RADIUS;
-
       const cards = [];
       for (let i = 0; i < STACK_COUNT; i++) {
         cards.push({ x: cardsStartX + i * (CARD_WIDTH + CARD_GAP), y: cardsY });
@@ -156,6 +169,8 @@
       return {
         cx,
         cy,
+        scoreY,
+        heartsY,
         cards,
         bell: { x: cx, y: bellY, radius: BELL_RADIUS },
         menuButton: {
@@ -323,7 +338,7 @@
       ctx.fillText(label, bell.x, bell.y);
     }
 
-    function drawLives() {
+    function drawLives(x, y) {
       const full = '♥';
       const empty = '♡';
       let hearts = '';
@@ -331,7 +346,7 @@
         hearts += i < lives ? full : empty;
         if (i < MAX_LIVES - 1) hearts += ' ';
       }
-      drawText(hearts, 20, 36, { size: 20, color: COLOR_RED, align: 'left' });
+      drawText(hearts, x, y, { size: 20, color: COLOR_RED });
     }
 
     function drawGame() {
@@ -360,11 +375,11 @@
       });
       drawText('×', layout.closeButton.x + layout.closeButton.size / 2, layout.closeButton.y + layout.closeButton.size / 2, { size: 18, color: COLOR_MUTED });
 
-      // Lives (top left)
-      drawLives();
+      // Score (above cards)
+      drawText(`${score}`, layout.cx, layout.scoreY, { size: 20, color: COLOR_SUBTLE });
 
-      // Score (top center)
-      drawText(`${score}`, layout.cx, 36, { size: 20, color: COLOR_SUBTLE });
+      // Lives (below bell, centered)
+      drawLives(layout.cx, layout.heartsY);
 
       // Rule reminder (bottom center)
       drawText('exactly 5 of a kind → pling!', layout.cx, canvas.height - 28, { size: 11, color: COLOR_SUBTLE });
@@ -561,23 +576,36 @@
       }
     }
 
-    canvas.addEventListener('click', (e) => handlePress(e.clientX, e.clientY));
+    function getCanvasCoords(clientX, clientY) {
+      const rect = canvas.getBoundingClientRect();
+      return { x: clientX - rect.left, y: clientY - rect.top };
+    }
+
+    canvas.addEventListener('click', (e) => {
+      const { x, y } = getCanvasCoords(e.clientX, e.clientY);
+      handlePress(x, y);
+    });
 
     canvas.addEventListener('touchstart', (e) => {
       e.preventDefault();
       const t = e.touches[0];
-      handlePress(t.clientX, t.clientY);
+      const { x, y } = getCanvasCoords(t.clientX, t.clientY);
+      handlePress(x, y);
     });
 
+    function resizeCanvas() {
+      canvas.width  = Math.min(window.innerWidth,  430);
+      canvas.height = Math.min(window.innerHeight, 932);
+    }
+
     window.addEventListener('resize', () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
+      resizeCanvas();
+      draw();
     });
 
     // ─── Init ────────────────────────────────────────────────────────────────────
 
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    resizeCanvas();
     loop();
 
     // Register service worker for PWA / offline support

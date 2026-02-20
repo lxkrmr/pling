@@ -3,7 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>pling</title>
+  <title>pling!</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0d1117">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="pling!">
+  <link rel="apple-touch-icon" href="icon.svg">
   <style>
     * {
       margin: 0;
@@ -72,6 +78,7 @@
     let highScore = parseInt(localStorage.getItem('highScore') || '0', 10);
 
     const MAX_LIVES = 3;
+    const IS_STANDALONE = window.matchMedia('(display-mode: standalone)').matches;
 
     // ─── Card flashes ────────────────────────────────────────────────────────────
 
@@ -209,6 +216,11 @@
       ctx.fillStyle = COLOR_FG;
       ctx.fillRect(btn.x, btn.y, btn.width, btn.height);
       drawText('start', btn.x + btn.width / 2, btn.y + btn.height / 2, { color: COLOR_BG });
+
+      // PWA hint – only when not already installed
+      if (!IS_STANDALONE) {
+        drawText('add to home screen for the best experience', layout.cx, canvas.height - 28, { size: 11, color: COLOR_SUBTLE });
+      }
     }
 
     function drawCountdown() {
@@ -518,6 +530,11 @@
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
     loop();
+
+    // Register service worker for PWA / offline support
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js');
+    }
   </script>
 </body>
 </html>

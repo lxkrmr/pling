@@ -22,9 +22,16 @@ self.addEventListener('activate', e => {
   );
 });
 
-// Fetch: serve from cache, fall back to network
+// Fetch: network first, fall back to cache (always fresh when online)
 self.addEventListener('fetch', e => {
   e.respondWith(
-    caches.match(e.request).then(r => r || fetch(e.request))
+    fetch(e.request)
+      .then(response => {
+        // Update cache with fresh version
+        const clone = response.clone();
+        caches.open(CACHE).then(cache => cache.put(e.request, clone));
+        return response;
+      })
+      .catch(() => caches.match(e.request))
   );
 });

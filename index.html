@@ -17,9 +17,14 @@
       box-sizing: border-box;
     }
 
+    html, body {
+      overflow: hidden;
+      height: 100%;
+    }
+
     body {
       background: #0d1117;
-      min-height: 100vh;
+      min-height: 100dvh;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -28,8 +33,15 @@
     canvas {
       display: block;
       border-radius: 12px;
-      /* border only visible on desktop when canvas is smaller than viewport */
       box-shadow: 0 0 0 1px #30363d;
+      touch-action: none;
+    }
+
+    @media (max-width: 430px) {
+      canvas {
+        border-radius: 0;
+        box-shadow: none;
+      }
     }
   </style>
 </head>
